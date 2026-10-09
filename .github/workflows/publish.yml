@@ -101,4 +101,8 @@ jobs:
 
       - name: Dry run summary
         if: ${{ inputs.dry_run == true }}
-        run: echo "dry_run: nothing published; the package above would have been released."
+        # A block scalar, not `run: echo "…"`: a plain YAML scalar cannot contain ": ",
+        # and this one did — which made the whole file invalid, and an invalid workflow
+        # is reported as a *failed run* on every push rather than as a YAML error.
+        run: |
+          echo "dry_run: nothing published; the package above would have been released."
