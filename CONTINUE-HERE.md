@@ -60,6 +60,13 @@ in — and the rendered text is what the archive gets. `node tools/render-spec.m
 only *reports* tuning differences. The 121,355,145 B figures elsewhere in this file are the
 1.0.1 record, not the current output.
 
+**The tooling ships with the package.** `tools/render-tuning.mjs` (preview the tuning, `--set`,
+`--compare` against the old project's spec), `tools/cdp/` (live-page probes over the debugging
+port) and `tools/screen/` (Windows screen captures for a transparent window) are in the
+repository with their own READMEs, and CI syntax-checks them. They are how the composer
+geometry, the sidebar black bar and the code-block layers were actually diagnosed — reach for
+them before forming an opinion from a screenshot.
+
 ## Two hard facts learned from the real machine (both change the product)
 
 1. **Windows will not let a running app's `app.asar` be replaced.** Reproduced:

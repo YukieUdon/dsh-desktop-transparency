@@ -58,6 +58,15 @@ lines) are flattened too, so keep the value opaque if you want them.
   package never had the problem) the material and per-surface expectations are now read from the
   spec's `params`, and every value the spec declares must appear in the archive.
 
+**Added: the verification tooling this project was built with.**
+
+The live-page probes (`tools/cdp/`) and the screen-forensics scripts (`tools/screen/`) are what
+settled every "why does it still look like that?" here — computed styles and boxes instead of
+screenshots — and `tools/render-tuning.mjs` prints what the glass tuning renders to (`--set`
+previews a value without touching the file, `--compare <spec.json>` checks the old hand-patched
+project for structural drift and reports tuning differences). Each directory has its own README,
+and CI syntax-checks them along with `lib/`.
+
 ## 1.0.1
 
 **Fixed: the plugin could not see the installation it runs inside.**

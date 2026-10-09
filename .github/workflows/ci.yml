@@ -25,9 +25,11 @@ jobs:
 
       # No dependencies to install: the package is Node builtins only, which is
       # also why it can run from inside an app bundle.
+      # The tools ship with the package: the CDP probes and the screen helpers are how a
+      # change here is verified, so a typo in them should not reach a branch either.
       - name: Syntax check every module
         run: |
-          for f in lib/*.mjs lib/index.js; do
+          for f in lib/*.mjs lib/index.js tools/*.mjs tools/cdp/*.mjs tools/cdp/*.js; do
             node --check "$f" || exit 1
           done
 
