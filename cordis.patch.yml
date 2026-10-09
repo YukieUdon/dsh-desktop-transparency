@@ -1,0 +1,20 @@
+# ============================================================================
+# dsh-desktop-transparency — DSH bundle patch
+# ============================================================================
+# Mount declaration for the Host half. DSH composes this row into the desktop
+# profile when the bundle is selected; the plugin then detects the installation,
+# patches app.asar if needed and reports that a restart is required.
+#
+# Install:
+#   plugin_manager (install_bundle) with this directory, or
+#   dsh plugin --profile desktop add dsh-desktop-transparency
+#
+# Remove the bundle and run `dsh-desktop-transparency restore` to put the official
+# app.asar back (removing the plugin alone leaves the installed archive patched).
+# ============================================================================
+
+- insert:
+    - id: dsh-desktop-transparency
+      name: dsh-desktop-transparency
+      config:
+        autoApply: true

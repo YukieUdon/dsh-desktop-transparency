@@ -1,0 +1,44 @@
+name: CI
+
+# Everything here guards against the failure mode this project keeps running into:
+# a change that does not error, it just silently does nothing in the patched app.
+# A wrong selector character, a stale anchor, or a missing integrity recomputation
+# all produce a window that simply stays square and opaque.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      # No dependencies to install: the package is Node builtins only, which is
+      # also why it can run from inside an app bundle.
+      - name: Syntax check every module
+        run: |
+          for f in lib/*.mjs lib/index.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Unit tests (synthetic archives)
+        run: node --test "test/*.test.mjs"
+
+      - name: Patch template is consistent with the expected CSS
+        run: node -e "import('./lib/patch-rules.mjs').then(m => { m.assertTemplateMatchesRules(); console.log('template OK, rules:', m.expectedCssRules.length) })"
+
+      - name: Edit list is self-consistent against the fixture
+        run: node -e "Promise.all([import('./lib/patch-rules.mjs'), import('./test/synthetic-asar.mjs')]).then(([r, s]) => { const f = r.diagnoseEdits(s.syntheticMainJsPatchable()); const bad = f.filter(x => !x.ok); if (bad.length) { console.error(bad); process.exit(1) } console.log('all edits diagnose clean:', f.map(x => x.id).join(', ')) })"
+
+      - name: Every [class*=] selector matches a recorded live class name
+        run: node tools/check-selectors.mjs test/fixtures/live-classes.json

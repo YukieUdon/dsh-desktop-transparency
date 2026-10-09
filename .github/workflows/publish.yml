@@ -1,0 +1,104 @@
+name: Publish to npm
+
+# Manual on purpose. A published npm version can never be overwritten — only
+# deprecated — so a version bump must be a decision, not a side effect of a push.
+# Day-to-day checks live in ci.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why this release (optional; shown first in the release notes)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Run every check and build the release notes, but publish nothing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # tag + GitHub Release
+  id-token: write   # npm Trusted Publishing (OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard (must run on main)
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Release only from main (currently ${GITHUB_REF})."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing needs npm >= 11.5.1; the npm that ships with Node 22 is
+      # older, and an older npm silently ignores the OIDC exchange and fails with
+      # ENEEDAUTH instead. Pin it here so the release does not depend on which npm
+      # the runner image happens to carry. Without this the workflow would require a
+      # long-lived NPM_TOKEN secret, which is exactly what OIDC publishing avoids.
+      - name: Use an npm that supports Trusted Publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
+      # Same gates as CI: the point of publishing is to ship something that was
+      # actually checked, and this package fails silently when it is wrong.
+      - name: Syntax check
+        run: |
+          for f in lib/*.mjs lib/index.js; do node --check "$f" || exit 1; done
+
+      - name: Unit tests
+        run: node --test "test/*.test.mjs"
+
+      - name: Selector check against recorded live class names
+        run: node tools/check-selectors.mjs test/fixtures/live-classes.json
+
+      - name: Refuse a version that already exists on npm
+        id: guard
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::$NAME@$VERSION is already published; bump the version first."
+            exit 1
+          fi
+          echo "publishing $NAME@$VERSION"
+
+      - name: What will be packed
+        run: npm pack --dry-run
+
+      - name: Publish
+        if: ${{ inputs.dry_run == false }}
+        run: npm publish --access public --provenance
+
+      - name: Tag and release
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ inputs.reason }}
+          NAME: ${{ steps.guard.outputs.name }}
+          VERSION: ${{ steps.guard.outputs.version }}
+        run: |
+          printf '%s\n' "${REASON:+$REASON$'\n'}" > notes.md
+          printf 'npm: https://www.npmjs.com/package/%s/v/%s\n' "$NAME" "$VERSION" >> notes.md
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run == true }}
+        run: echo "dry_run: nothing published; the package above would have been released."

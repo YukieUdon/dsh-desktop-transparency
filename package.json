@@ -1,0 +1,57 @@
+{
+  "name": "dsh-desktop-transparency",
+  "version": "1.0.1",
+  "description": "Transparent, acrylic and rounded DSH Desktop window on Windows, delivered as a DSH bundle that patches the shipped app.asar safely (auto-detect, backup, verify, one-click install and restore).",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "desktop",
+    "transparency",
+    "acrylic",
+    "rounded-corners",
+    "electron"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cli": "./lib/cli.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dsh-desktop-transparency": "./lib/cli.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "RELEASING.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:integration": "node --test --test-name-pattern=integration \"test/*.test.mjs\"",
+    "status": "node lib/cli.mjs status",
+    "apply": "node lib/cli.mjs apply",
+    "restore": "node lib/cli.mjs restore"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YukieUdon/dsh-desktop-transparency.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YukieUdon/dsh-desktop-transparency/issues"
+  },
+  "homepage": "https://github.com/YukieUdon/dsh-desktop-transparency#readme"
+}
