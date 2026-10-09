@@ -1,5 +1,63 @@
 # Changelog
 
+## Unreleased
+
+**Fixed: the transcript no longer collides with the composer's stats row — without painting an opaque band.**
+
+The conversation scrolls *under* the composer by design — `composerSeat` is
+`position: sticky / absolute; bottom: 0` above the scroller — and DSH hides that under-scroll
+with a gradient the seat paints itself (transparent at its top edge, panel colour 36px down).
+The patch cleared that gradient (`background:transparent !important;
+background-image:none !important`) in the name of transparency, which removed the only thing
+hiding the text: the last conversation row stayed legible on top of the stats line
+(`conversation.composer.dock` → `div[data-composer-stats]`, rendered *inside* the seat).
+
+Restoring the gradient (the first attempt) does hide the text, but it also paints an opaque
+panel band over the desktop at the bottom of the window, and hiding content without painting
+is not possible here: `backdrop-filter` is inert in this transparent window — measured, `invert(1)`
+on both the sticky seat and a `position:fixed` overlay changed nothing.
+
+- The transcript scrollport is now shortened by `--dsh-composer-height`, and the seat is lifted
+  out of it with `position: absolute` (its containing block is the relative `Dc7zOa_body`), so
+  nothing is ever painted behind the composer and no band is needed. This agrees with DSH's own
+  scroll code, which already treats the seat's top edge as the bottom of the reading viewport.
+- The two offsets DSH wrote for the old full-height scrollport are re-based:
+  `toBottomSlot { bottom: 16px }` and `--turn-rail-band: var(--dsh-conversation-viewport-height)`.
+- The trajectory view is excluded (`:not(:has([data-conversation-composer-overlay]))`): there DSH
+  positions the seat itself and its ledger reserves the clearance, so interfering put the composer
+  in mid-window. The "seat paints no backdrop" rule applies to both views.
+- Cost: the transcript now ends at the composer's top edge (a clean cut, no fade into the input bar).
+- A patched archive from the same official source is 121,356,696 bytes / sha256 `DDC12073…`.
+
+**The glass tuning is now a named parameter block instead of values buried in the stylesheet.**
+
+`lib/glass-tuning.mjs` holds the window material and one background value per surface; the
+template refers to them as `${__dshGlass…}` and `lib/patch-rules.mjs` renders them before any
+anchor is matched, so the values a build bakes in are readable without opening an archive.
+
+- A `${name}` with no value throws instead of reaching `main.js`, where it would be injected as
+  literal CSS text and quietly do nothing; a knob nothing refers to is reported.
+- `operations.mjs` checks the rendered rules (`renderedExpectedCssRules()`), not the raw entries,
+  so the tuning cannot drift from what the archive must contain.
+- Same nine values, same defaults: the rendered output — and therefore the archive — is
+  byte-for-byte what it was (121,356,696 B / `DDC12073…`).
+
+**Added: a knob for the code blocks.**
+
+A code block paints several opaque layers (measured live: the card and its inner `<pre>` in
+`rgb(27,27,28)`, over a language banner). `__dshGlassCodeBg` puts the value on the **card** and
+flattens everything inside it (`[class*="md-code-block"] *{background:transparent}`): applying
+the same alpha to every layer *stacks* it (0.72 x 0.72 ~= 0.92), which reads as "only the
+banner changed". The default is `var(--dsw-specific-sidebar-fill)` — what the card paints
+today — so the default changes nothing, and `transparent` or a `color-mix(…)` with an alpha
+makes the whole block one translucent layer. Caveat: a block's *own* inner tints (highlighted
+lines) are flattened too, so keep the value opaque if you want them.
+
+- The old project's `tools/verify-patched.mjs` had `backgroundMaterial: "acrylic"` hardcoded as
+  an expectation, so selecting a different material failed its own verification. There (this
+  package never had the problem) the material and per-surface expectations are now read from the
+  spec's `params`, and every value the spec declares must appear in the archive.
+
 ## 1.0.1
 
 **Fixed: the plugin could not see the installation it runs inside.**

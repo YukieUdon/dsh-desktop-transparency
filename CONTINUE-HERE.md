@@ -43,13 +43,22 @@ wsl -e bash -lc "cd '<path>/dsh-desktop-transparency' && node --test 'test/*.tes
 Template/CSS consistency, edit-list diagnostics, the selector check and the syntax check all
 pass there too; `npm pack` ships no `test/`, `tools/` or archive bytes.
 
-**The claim that matters**: this package's output is byte-identical to the archive the old
-project shipped and verified.
+**The claim that matters**: this package's rules are the same text as the old project's spec, and
+with the same tuning both build the same archive.
 
 ```
-new build : 121,355,145 bytes  D79B6BA04FF56991629802FAF8629CED23679A0F7B13D4668B6282D00725B812
-old build : 121,355,145 bytes  D79B6BA04FF56991629802FAF8629CED23679A0F7B13D4668B6282D00725B812
+this package, its own defaults : 121356903 bytes  2F2211A079098DE0F6FEA765EC24F34236EAFFDCAAFC8D950C2D64A02985170B
+old project, its current spec  : 121356903 bytes  2F2211A079098DE0F6FEA765EC24F34236EAFFDCAAFC8D950C2D64A02985170B
 ```
+
+Both sides are on their defaults, so the artifacts are byte-identical. Re-checked after the
+composer change and the glass parameterisation (see `CHANGELOG.md`, "Unreleased"): the old
+project's `spec-win-css.json` and this package's `lib/patch-template.js` are the same bytes
+*as sources* — both carry the `${__dshGlass…}` placeholders that `lib/glass-tuning.mjs` fills
+in — and the rendered text is what the archive gets. `node tools/render-spec.mjs --check-plugin`
+(from the old project) compares both in one command: it fails on any structural difference and
+only *reports* tuning differences. The 121,355,145 B figures elsewhere in this file are the
+1.0.1 record, not the current output.
 
 ## Two hard facts learned from the real machine (both change the product)
 
